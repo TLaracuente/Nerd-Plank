@@ -1,0 +1,201 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Nerd Plank Challenge</title>
+  <style>
+    :root {
+      --bg: #111; --bg2: #222; --fg: #f4f4f4;
+      --accent: #5af; --accent2: #a5f;
+    }
+    [data-theme="light"] {
+      --bg: #fafafa; --bg2: #fff; --fg: #222;
+      --accent: #367; --accent2: #95c;
+    }
+    body {margin:0;padding:0;font-family:Helvetica;background:var(--bg);color:var(--fg);}
+    header {background:var(--accent);padding:1em;text-align:center;font-size:1.5em;font-weight:bold;}
+    nav {display:flex;justify-content:space-around;background:var(--bg2);padding:0.5em;}
+    nav button {background:none;border:none;color:var(--fg);font-size:1em;cursor:pointer;}
+    .toggle {position:absolute;top:10px;right:20px;font-size:1.2em;cursor:pointer;}
+    section{padding:1em;display:none;}
+    section.active{display:block;}
+    .badge {display:inline-block;margin:5px;padding:5px 10px;border-radius:12px;background:var(--accent2);}
+    .trivia {margin:1em 0;padding:1em;border-radius:8px;background:var(--bg2);}
+    .input-group{margin-bottom:1em;}
+    input, select{width:100%;padding:0.5em;font-size:1em;}
+    button.submit, button.timer-btn {background:var(--accent);color:var(--fg);padding:0.7em;width:100%;border:none;font-size:1.1em;cursor:pointer;margin-bottom:0.5em;}
+    .timer-display {font-size:1.2em;margin:0.5em 0;text-align:center;}
+  </style>
+</head>
+<body data-theme="dark">
+  <header>Nerd Plank Challenge <span class="toggle" onclick="toggleTheme()">🌙</span></header>
+  <nav>
+    <button onclick="showSection('home')">Home</button>
+    <button onclick="showSection('log')">Log Plank</button>
+    <button onclick="showSection('leader')">Leaderboard</button>
+    <button onclick="showSection('rules')">Rules</button>
+  </nav>
+
+  <section id="home" class="active">
+    <h2>Welcome, Nerds! 🧠</h2>
+    <p id="motivation">“Loading motivation...”</p>
+    <div id="badgeDisplay"></div>
+  </section>
+
+  <section id="log">
+    <h2>Log Your Plank</h2>
+    <div class="input-group">
+      <label>Name</label><input type="text" id="name" placeholder="Your name" />
+    </div>
+
+    <button class="timer-btn" onclick="startTimer()">Start Timer 🟢</button>
+    <button class="timer-btn" onclick="stopTimer()">Stop Timer 🔴</button>
+    <div class="timer-display" id="timerDisplay">Current Time: 00:00</div>
+
+    <div class="input-group" id="durationGroup">
+      <label>Duration (MM:SS)</label><input type="text" id="duration" placeholder="e.g. 2:30" />
+    </div>
+    <div class="input-group">
+      <label>Date</label><input type="date" id="date" />
+    </div>
+    <button class="submit" onclick="logPlank()">Log My Plank 💪</button>
+    <div id="logMessage"></div>
+    <div class="trivia" id="triviaLog"></div>
+  </section>
+
+  <section id="leader">
+    <h2>Leaderboard</h2>
+    <ul id="leaderboardList"></ul>
+  </section>
+
+  <section id="rules">
+    <h2>Rules</h2>
+    <ul>
+      <li>Use the timer or enter duration manually</li>
+      <li>Form matters: back flat, core engaged!</li>
+      <li>Badges are awarded automatically</li>
+      <li>Challenge: July 15 – August 15</li>
+    </ul>
+  </section>
+
+  <script>
+    const triviaFacts = [
+      'The word “algorithm” comes from a 9th-century Persian mathematician!',
+      'The first computer bug was an actual moth.',
+      '“Plankton” and “plank” are unrelated—even though plankton also float!'
+    ];
+
+    const plankLogs = [];
+    let userBadges = {};
+    let timerInterval = null;
+    let startTime = null;
+
+    function toggleTheme() {
+      const body = document.body;
+      const current = body.getAttribute('data-theme');
+      const next = current==='dark'? 'light': 'dark';
+      body.setAttribute('data-theme', next);
+      document.querySelector('.toggle').textContent = next==='dark'?'🌙':'☀️';
+    }
+
+    function showSection(id) {
+      document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      if (id === 'home') refreshHome();
+    }
+
+    function showRandomMotivation() {
+      const quotes = [
+        'With great core comes great responsibility.',
+        'May the core be with you.',
+        'In coding and planking, precision matters!'
+      ];
+      document.getElementById('motivation').textContent = quotes[Math.floor(Math.random()*quotes.length)];
+    }
+
+    function refreshHome() {
+      showRandomMotivation();
+      displayBadges();
+    }
+
+    function displayBadges() {
+      const div = document.getElementById('badgeDisplay');
+      div.innerHTML = '';
+      for (let [name, badges] of Object.entries(userBadges)) {
+        div.innerHTML += `<p><strong>${name}</strong> earned: ${badges.map(b=> '<span class="badge">'+b+'</span>').join(' ')}</p>`;
+      }
+    }
+
+    function startTimer() {
+      startTime = Date.now();
+      document.getElementById("durationGroup").style.display = "none";
+      timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+        const seconds = (elapsed % 60).toString().padStart(2, '0');
+        document.getElementById("timerDisplay").textContent = `Current Time: ${minutes}:${seconds}`;
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+      const seconds = (elapsed % 60).toString().padStart(2, '0');
+      const duration = `${minutes}:${seconds}`;
+      document.getElementById("duration").value = duration;
+      document.getElementById("durationGroup").style.display = "block";
+    }
+
+    function logPlank() {
+      const name = document.getElementById("name").value.trim();
+      const duration = document.getElementById("duration").value;
+      const date = document.getElementById("date").value;
+      if (!(name && duration && date)) {
+        document.getElementById("logMessage").innerText = "⚠️ Fill all fields.";
+        return;
+      }
+      plankLogs.push({ name, duration, date });
+      awardBadges(name, duration, date);
+      document.getElementById("logMessage").innerText = "✅ Plank logged!";
+      document.getElementById("triviaLog").textContent = triviaFacts[Math.floor(Math.random()*triviaFacts.length)];
+      updateLeaderboard();
+    }
+
+    function awardBadges(name, duration, date) {
+      if (!userBadges[name]) userBadges[name]=[];
+      const [m,s] = duration.split(':').map(Number) || [0,0];
+      const secs = m*60 + s;
+      if (!userBadges[name].includes('Syntax & Sit-ups') && secs >= 300) userBadges[name].push('Syntax & Sit-ups');
+      if (!userBadges[name].includes('Code & Core') && new Date(date).getHours() >= 21) userBadges[name].push('Code & Core');
+
+      const logs = plankLogs.filter(e=> e.name===name).sort((a,b)=>new Date(b.date)-new Date(a.date));
+      if (logs.length >=3) {
+        const d0 = new Date(logs[0].date), d1 = new Date(logs[1].date), d2 = new Date(logs[2].date);
+        if ((d0 - d1 === 86400000) && (d1 - d2 === 86400000) && !userBadges[name].includes('Debugger')) {
+          userBadges[name].push('Debugger');
+        }
+      }
+    }
+
+    function updateLeaderboard() {
+      const board = {};
+      plankLogs.forEach(e=> {
+        const [m,s]=e.duration.split(':').map(Number);
+        board[e.name] = (board[e.name] || 0) + m*60 + s;
+      });
+      const sorted = Object.entries(board).sort((a,b)=>b[1]-a[1]);
+      const list = document.getElementById("leaderboardList");
+      list.innerHTML = '';
+      sorted.forEach(([name, secs], i) => {
+        const min = Math.floor(secs/60), sec = secs%60;
+        const badges = userBadges[name] ? ' ' + userBadges[name].map(b=> '🏅').join('') : '';
+        list.innerHTML += `<li>${i+1}. ${name} – ${min}:${sec.toString().padStart(2,'0')} total${badges}</li>`;
+      });
+    }
+
+    showRandomMotivation();
+  </script>
+</body>
+</html>
